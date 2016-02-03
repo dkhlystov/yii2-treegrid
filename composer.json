@@ -1,0 +1,21 @@
+{
+    "name": "dkhlystov/yii2-treegrid",
+    "description": "TreeView widget for Yii PHP Framework Version 2",
+    "type": "yii2-extension",
+    "keywords": ["yii2","extension","tree","grid","widget"],
+    "license": "BSD-3-Clause",
+    "authors": [
+        {
+            "name": "Dmitry Khlystov",
+            "email": "dkhlystov@gmail.com"
+        }
+    ],
+    "require": {
+        "yiisoft/yii2": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "dkhlystov\\": ""
+        }
+    }
+}
