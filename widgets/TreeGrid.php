@@ -29,7 +29,50 @@ class TreeGrid extends BaseTreeGrid {
 	/**
 	 * {@inheritdoc}
 	 */
-	protected function getParentId($model, $key, $index) {
+	protected function initDataProvider()
+	{
+		parent::initDataProvider();
+
+		$this->sortModels();
+	}
+
+	/**
+	 * Sorting models in data provider. Placing child models after parent.
+	 * @return void
+	 */
+	protected function sortModels()
+	{
+		//original models
+		$_models = array_reverse($this->dataProvider->getModels());
+		//roots
+		$stack = [];
+		foreach ($_models as $key => $model) {
+			if ($model[$this->parentIdAttribute] === null) {
+				array_push($stack, $model);
+				unset($_models[$key]);
+			}
+		}
+		//parent - child
+		$models = [];
+		while (sizeof($stack)) {
+			$model = array_pop($stack);
+			foreach ($_models as $key => $child) {
+				if ($child[$this->parentIdAttribute] === $model[$this->idAttribute]) {
+					array_push($stack, $child);
+					unset($_models[$key]);
+				}
+			}
+			$models[] = $model;
+		}
+
+		$this->dataProvider->setModels($models);
+	}
+
+	/**
+	 * {@inheritdoc}
+	 */
+	protected function getParentId($model)
+	{
 		if ($this->_isRoot) return null;
 		return $model[$this->parentIdAttribute];
 	}
@@ -37,7 +80,8 @@ class TreeGrid extends BaseTreeGrid {
 	/**
 	 * {@inheritdoc}
 	 */
-	protected function getChildCount($model, $key, $index) {
+	protected function getChildCount($model)
+	{
 		$attr = $this->countAttribute;
 		if ($model instanceof BaseActiveRecord) {
 			if ($model->hasAttribute($attr)) return $model->getAttribute($attr);
@@ -51,14 +95,11 @@ class TreeGrid extends BaseTreeGrid {
 	/**
 	 * {@inheritdoc}
 	 */
-	protected function addNodeCondition($id) {
-		$class = $this->dataProvider->query->modelClass;
-		$pk = $class::primaryKey();
-		if (!isset($pk[0])) return;
-
+	protected function addLazyCondition($id)
+	{
 		$this->_isRoot = false;
 
-		if ($id === null && $this->showRoot) {
+		if ($id === null && $this->showRoots) {
 			$this->_isRoot = true;
 			$this->dataProvider->query->andWhere([$this->parentIdAttribute => null]);
 		} else {
@@ -66,11 +107,34 @@ class TreeGrid extends BaseTreeGrid {
 				$this->_isRoot = true;
 				$conditions = [$this->parentIdAttribute => null];
 			} else {
-				$conditions = [$pk[0] => $id];
+				$conditions = [$this->idAttribute => $id];
 			}
-			$row = $class::find()->select([$pk[0]])->where($conditions)->asArray()->one();
-			if ($row !== null) $this->dataProvider->query->andWhere([$this->parentIdAttribute => $row[$pk[0]]]);
+			$class = $this->dataProvider->query->modelClass;
+			$row = $class::find()->select([$this->idAttribute])->where($conditions)->asArray()->one();
+			if ($row !== null) $this->dataProvider->query->andWhere([$this->parentIdAttribute => $row[$this->idAttribute]]);
 		}
+	}
+
+	/**
+	 * {@inheritdoc}
+	 */
+	protected function removeRoots()
+	{
+		$models = $this->dataProvider->getModels();
+		$ids = [];
+		foreach ($models as $key => $model) {
+			if ($model[$this->parentIdAttribute] === null) {
+				$ids[] = $model[$this->idAttribute];
+				unset($models[$key]);
+			}
+		}
+		foreach ($models as $key => $model) {
+			if (array_search($model[$this->parentIdAttribute], $ids) !== false) {
+				$model[$this->parentIdAttribute] = null;
+				$models[$key] = $model;
+			}
+		}
+		$this->dataProvider->setModels($models);
 	}
 
 }

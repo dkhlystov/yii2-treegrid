@@ -37,7 +37,8 @@ class NestedTreeGrid extends BaseTreeGrid {
 	/**
 	 * {@inheritdoc}
 	 */
-	public function init() {
+	public function init()
+	{
 		if ($this->dataProvider instanceof ActiveDataProvider) {
 			$this->dataProvider->query->orderBy([$this->leftAttribute => SORT_ASC]);
 		}
@@ -47,13 +48,14 @@ class NestedTreeGrid extends BaseTreeGrid {
 	/**
 	 * {@inheritdoc}
 	 */
-	protected function getParentId($model, $key, $index) {
+	protected function getParentId($model)
+	{
 		$depth = $model[$this->depthAttribute];
 		if (sizeof($this->_parentIds)) {
 			$offset = $depth - $this->_depth - 1;
 			if ($offset < 0) array_splice($this->_parentIds, $offset);
 		}
-		$this->_parentIds[] = $key;
+		$this->_parentIds[] = $model[$this->idAttribute];
 		$this->_depth = $depth;
 		if (($i = sizeof($this->_parentIds)) > 1) return $this->_parentIds[$i - 2];
 
@@ -63,26 +65,25 @@ class NestedTreeGrid extends BaseTreeGrid {
 	/**
 	 * {@inheritdoc}
 	 */
-	protected function getChildCount($model, $key, $index) {
+	protected function getChildCount($model)
+	{
 		return ($model[$this->rightAttribute] - $model[$this->leftAttribute] - 1) / 2;
 	}
 
 	/**
 	 * {@inheritdoc}
 	 */
-	protected function addNodeCondition($id) {
-		$class = $this->dataProvider->query->modelClass;
-		$pk = $class::primaryKey();
-		if (!isset($pk[0])) return;
-
-		if ($id === null && $this->showRoot) {
+	protected function addLazyCondition($id)
+	{
+		if ($id === null && $this->showRoots) {
 			$this->dataProvider->query->andWhere([$this->leftAttribute => 1]);
 		} else {
 			if ($id === null) {
 				$conditions = [$this->leftAttribute => 1];
 			} else {
-				$conditions = [$pk[0] => $id];
+				$conditions = [$this->idAttribute => $id];
 			}
+			$class = $this->dataProvider->query->modelClass;
 			$row = $class::find()->select([
 				$this->leftAttribute,
 				$this->rightAttribute,
@@ -94,6 +95,20 @@ class NestedTreeGrid extends BaseTreeGrid {
 				['=', $this->depthAttribute, $row[$this->depthAttribute] + 1],
 			]);
 		}
+	}
+
+	/**
+	 * {@inheritdoc}
+	 */
+	protected function removeRoots()
+	{
+		$models = $this->dataProvider->getModels();
+		foreach ($models as $key => $model) {
+			if ($model[$this->depthAttribute] === 0) {
+				unset($models[$key]);
+			}
+		}
+		$this->dataProvider->setModels($models);
 	}
 
 }
