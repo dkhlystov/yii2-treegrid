@@ -28,4 +28,6 @@ Usage
 Once the extension is installed, simply use it in your code by  :
 
 ```php
-<?= \dkhlystov\AutoloadExample::widget(); ?>```
+<?= \dkhlystov\widgets\TreeView::widget([
+		'dataProvider'=>$dataProvider,
+]); ?>```
