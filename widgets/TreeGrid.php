@@ -2,111 +2,75 @@
 
 namespace dkhlystov\widgets;
 
-use yii\helpers\Html;
-use yii\helpers\Json;
-use yii\grid\GridView;
+use yii\db\BaseActiveRecord;
 
-class TreeGrid extends GridView {
+/**
+ * The TreeGrid widget is used to display parent relation tree data in a grid.
+ *
+ * For more information see documentation of yii\grid\GridView.
+ *
+ * @author Dmitry Khlystov <dkhlystov@gmail.com>
+ */
+class TreeGrid extends BaseTreeGrid {
 
 	/**
-	 * @var array the HTML attributes for the grid table element.
-	 * @see \yii\helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
+	 * @var string name of parent relation attribute.
 	 */
-	public $tableOptions = ['class' => 'table table-bordered'];
-	/**
-	 * @var string the layout that determines how different sections of the list view should be organized.
-	 * The following tokens will be replaced with the corresponding section contents:
-	 *
-	 * - `{summary}`: the summary section. See [[renderSummary()]].
-	 * - `{errors}`: the filter model error summary. See [[renderErrors()]].
-	 * - `{items}`: the list items. See [[renderItems()]].
-	 * - `{sorter}`: the sorter. See [[renderSorter()]].
-	 * - `{pager}`: the pager. See [[renderPager()]].
-	 */
-	public $layout = "{items}";
-
-	public $pluginOptions;
-
 	public $parentIdAttribute = 'parent_id';
-
-	public $leftAttribute = 'lft';
-
-	public $rightAttribute = 'rgt';
-
-	public $depthAttribute = 'depth';
-
+	/**
+	 * @var string name of child count attribute.
+	 */
 	public $countAttribute = 'count';
+	/**
+	 * @var boolean current drows root node
+	 */
+	private $_isRoot;
 
-	// public $lazyLoad = true;
-
-	private $_depth;
-	private $_parentIds = [];
-
-	public function init() {
-		parent::init();
-
-		$this->dataProvider->pagination = false;
-		$this->dataProvider->sort = false;
-
-		$id = $this->options['id'];
-		$options = Json::htmlEncode($this->pluginOptions);
-
-		$view = $this->getView();
-		TreeGridAsset::register($view);
-
-		$view->registerJs("jQuery('#$id > table').treegrid($options);");
+	/**
+	 * {@inheritdoc}
+	 */
+	protected function getParentId($model, $key, $index) {
+		if ($this->_isRoot) return null;
+		return $model[$this->parentIdAttribute];
 	}
 
 	/**
-	 * Renders a table row with the given data model and key.
-	 * @param mixed $model the data model to be rendered
-	 * @param mixed $key the key associated with the data model
-	 * @param integer $index the zero-based index of the data model among the model array returned by [[dataProvider]].
-	 * @return string the rendering result
+	 * {@inheritdoc}
 	 */
-	public function renderTableRow($model, $key, $index) {
-		$cells = [];
-		/* @var $column Column */
-		foreach ($this->columns as $column) {
-			$cells[] = $column->renderDataCell($model, $key, $index);
-		}
-		if ($this->rowOptions instanceof Closure) {
-			$options = call_user_func($this->rowOptions, $model, $key, $index, $this);
+	protected function getChildCount($model, $key, $index) {
+		$attr = $this->countAttribute;
+		if ($model instanceof BaseActiveRecord) {
+			if ($model->hasAttribute($attr)) return $model->getAttribute($attr);
 		} else {
-			$options = $this->rowOptions;
+			if (isset($model[$attr])) return $model[$attr];
 		}
-		$key = is_array($key) ? json_encode($key) : (string) $key;
-		$options['data-key'] = $key;
 
-		//treegrid
-		//id
-		Html::addCssClass($options, 'treegrid-'.$key);
-		//parent id
-		$parentId = null;
-		if ($model->hasAttribute($this->parentIdAttribute)) {
-			//@todo check
-			$parentId = $model->{$this->parentIdAttribute};
-		} elseif ($model->hasAttribute($this->depthAttribute)) {
-			$depth = $model->{$this->depthAttribute};
-			if (sizeof($this->_parentIds)) {
-				$offset = $depth - $this->_depth - 1;
-				if ($offset < 0) array_splice($this->_parentIds, $offset);
+		return null;
+	}
+
+	/**
+	 * {@inheritdoc}
+	 */
+	protected function addNodeCondition($id) {
+		$class = $this->dataProvider->query->modelClass;
+		$pk = $class::primaryKey();
+		if (!isset($pk[0])) return;
+
+		$this->_isRoot = false;
+
+		if ($id === null && $this->showRoot) {
+			$this->_isRoot = true;
+			$this->dataProvider->query->andWhere([$this->parentIdAttribute => null]);
+		} else {
+			if ($id === null) {
+				$this->_isRoot = true;
+				$conditions = [$this->parentIdAttribute => null];
+			} else {
+				$conditions = [$pk[0] => $id];
 			}
-			$this->_parentIds[] = $key;
-			$this->_depth = $depth;
-			if (($i = sizeof($this->_parentIds)) > 1) $parentId = $this->_parentIds[$i - 2];
+			$row = $class::find()->select([$pk[0]])->where($conditions)->asArray()->one();
+			if ($row !== null) $this->dataProvider->query->andWhere([$this->parentIdAttribute => $row[$pk[0]]]);
 		}
-		if ($parentId !== null) Html::addCssClass($options, 'treegrid-parent-'.$parentId);
-		//child count
-		$count = 0;
-		if ($model->hasAttribute($this->countAttribute)) {
-			$count = $model->{$this->countAttribute};
-		} elseif ($model->hasAttribute($this->leftAttribute) && $model->hasAttribute($this->rightAttribute)) {
-			$count = ($model->{$this->rightAttribute} - $model->{$this->leftAttribute} - 1) / 2;
-		}
-		if ($count !== 0) $options['data-count'] = $count;
-
-		return Html::tag('tr', implode('', $cells), $options);
 	}
 
 }
