@@ -109,6 +109,8 @@ abstract class BaseTreeGrid extends Widget {
 	 */
 	public $idAttribute;
 
+	private $_token;
+
 	/**
 	 * Initializes the grid view.
 	 * This method will initialize required property values and instantiate [[columns]] objects.
@@ -157,6 +159,10 @@ abstract class BaseTreeGrid extends Widget {
 	 */
 	public function run()
 	{
+		if ($this->_token !== null && Yii::$app->getRequest()->isAjax) {
+			$this->renderAjax();
+		}
+
 		$id = $this->options['id'];
 		$options = Json::htmlEncode($this->getClientOptions());
 		$view = $this->getView();
@@ -174,6 +180,17 @@ abstract class BaseTreeGrid extends Widget {
 	}
 
 	/**
+	 * Ajax renderer. If ajax request, it needs only tbody data.
+	 * @return void
+	 */
+	protected function renderAjax() {
+		$response = Yii::$app->getResponse();
+		$response->clearOutputBuffers();
+		echo Json::encode($this->makeTableRows());
+		Yii::$app->end();
+	}
+
+	/**
 	 * Returns the options for the treegrid JS plugin.
 	 * @return array the options
 	 */
@@ -182,14 +199,11 @@ abstract class BaseTreeGrid extends Widget {
 		$options = $this->pluginOptions;
 		if (!isset($options['source'])) {
 			$url = Url::toRoute('');
-			$options['source'] = new JsExpression('function(id, complete) {
+			$options['source'] = new JsExpression('function(id, response) {
 				var $tr = this, token = Math.random().toString(36).substr(2);
-				console.log("start loading");
 				$.get("'.$url.'", {treegrid_id: id, treegrid_token: token}, function(data) {
-					var items = $(data).find(\'[data-treegrid-token="\'+token+\'"] > table > tbody > tr\');
-					console.log("data readed: "+items.length);
-					complete(items);
-				});
+					response(data);
+				}, "json");
 			}');
 		}
 
@@ -281,6 +295,16 @@ abstract class BaseTreeGrid extends Widget {
 	 */
 	public function renderTableBody()
 	{
+		$rows = $this->makeTableRows();
+		return "<tbody>\n" . implode("\n", $rows) . "\n</tbody>";
+	}
+
+	/**
+	 * Making rows to array
+	 * @return array
+	 */
+	protected function makeTableRows()
+	{
 		$models = array_values($this->dataProvider->getModels());
 		$keys = $this->dataProvider->getKeys();
 		$rows = [];
@@ -300,7 +324,7 @@ abstract class BaseTreeGrid extends Widget {
 				}
 			}
 		}
-		return "<tbody>\n" . implode("\n", $rows) . "\n</tbody>";
+		return $rows;
 	}
 
 	/**
@@ -346,8 +370,8 @@ abstract class BaseTreeGrid extends Widget {
 			$id = Yii::$app->getRequest()->get('treegrid_id', null);
 			if ($this->lazyLoad || $id !== null) {
 				$this->addLazyCondition($id);
-				$token = Yii::$app->getRequest()->get('treegrid_token', null);
-				if ($token !== null) $this->options['data-treegrid-token'] = $token;
+				$this->_token = Yii::$app->getRequest()->get('treegrid_token', null);
+				if ($this->_token !== null) $this->options['data-treegrid-token'] = $this->_token;
 			}
 		}
 		if (!$this->lazyLoad && !$this->showRoots) $this->removeRoots();
