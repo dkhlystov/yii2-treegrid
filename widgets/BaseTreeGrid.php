@@ -105,10 +105,16 @@ abstract class BaseTreeGrid extends Widget {
 	 */
 	public $showRoots = false;
 	/**
-	 * @var string name of id attribute
+	 * @var string name of id attribute.
 	 */
 	public $idAttribute;
-
+	/**
+	 * @var array|string|null the URL for the move action.
+	 */
+	public $moveAction;
+	/**
+	 * @var string ajax token.
+	 */
 	private $_token;
 
 	/**
@@ -197,6 +203,7 @@ abstract class BaseTreeGrid extends Widget {
 	protected function getClientOptions()
 	{
 		$options = $this->pluginOptions;
+
 		if (!isset($options['source'])) {
 			$url = Url::toRoute('');
 			$options['source'] = new JsExpression('function(id, response) {
@@ -205,6 +212,26 @@ abstract class BaseTreeGrid extends Widget {
 					response(data);
 				}, "json");
 			}');
+		}
+
+		if (!isset($options['enableMove']) && $this->moveAction !== null) {
+			$options['enableMove'] = true;
+			if (!isset($options['onMove'])) {
+				$url = Url::toRoute($this->moveAction);
+				$options['onMove'] = new JsExpression('function(item, target, position) {
+					var $el = this;
+					$el.treegrid("option", "enableMove", false);
+					$.get("'.$url.'", {
+						id: item.treegrid("getId"),
+						target: target.treegrid("getId"),
+						position: position
+					}).done(function() {
+						$el.treegrid("option", "enableMove", true);
+					}).fail(function(xhr) {
+						alert(xhr.responseText);
+					});
+				}');
+			}
 		}
 
 		return $options;
