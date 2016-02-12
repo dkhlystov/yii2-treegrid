@@ -100,6 +100,64 @@ class NestedTreeGrid extends BaseTreeGrid {
 	/**
 	 * {@inheritdoc}
 	 */
+	protected function loadInitial()
+	{
+		$query = clone $this->dataProvider->query;
+		if (!$this->showRoots) $query->andWhere(['<>', $this->leftAttribute, 1]);
+		$parents = $query->select([
+			$this->leftAttribute,
+			$this->rightAttribute,
+			$this->depthAttribute,
+		])->andWhere(['and',
+			['<', $this->leftAttribute, $this->initialNode[$this->leftAttribute]],
+			['>', $this->rightAttribute, $this->initialNode[$this->rightAttribute]],
+		])->asArray()->all();
+
+		$items = [];
+		foreach ($parents as $row) {
+			$query = clone $this->dataProvider->query;
+			$items = array_merge($items, $query->andWhere(['and',
+				['>', $this->leftAttribute, $row[$this->leftAttribute]],
+				['<', $this->rightAttribute, $row[$this->rightAttribute]],
+				['=', $this->depthAttribute, $row[$this->depthAttribute] + 1],
+			])->all());
+		}
+
+		return $items;
+	}
+
+	/**
+	 * {@inheritdoc}
+	 */
+	protected function initialExpand()
+	{
+		$lft = $this->initialNode[$this->leftAttribute];
+		$rgt = $this->initialNode[$this->rightAttribute];
+		$expanded = [];
+		foreach ($this->dataProvider->getModels() as $model) {
+			if ($model[$this->leftAttribute] < $lft && $model[$this->rightAttribute] > $rgt) {
+				$expanded[] = $model[$this->idAttribute];
+			}
+		}
+
+		return $expanded;
+	}
+
+	/**
+	 * {@inheritdoc}
+	 */
+	protected function sortModels()
+	{
+		$models = $this->dataProvider->getModels();
+		usort($models, function($a, $b) {
+			return $a[$this->leftAttribute] - $b[$this->leftAttribute];
+		});
+		$this->dataProvider->setModels($models);
+	}
+
+	/**
+	 * {@inheritdoc}
+	 */
 	protected function removeRoots()
 	{
 		$models = $this->dataProvider->getModels();
@@ -109,6 +167,8 @@ class NestedTreeGrid extends BaseTreeGrid {
 			}
 		}
 		$this->dataProvider->setModels($models);
+		$this->dataProvider->setKeys(null);
+		$this->dataProvider->prepare();
 	}
 
 }

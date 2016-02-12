@@ -113,9 +113,17 @@ abstract class BaseTreeGrid extends Widget {
 	 */
 	public $moveAction;
 	/**
+	 * @var array|BaseActiveRecord|null node that need to be visible
+	 */
+	public $initialNode;
+	/**
 	 * @var string ajax token.
 	 */
 	private $_token;
+	/**
+	 * @var array ids of expanded nodes
+	 */
+	private $_expanded = [];
 
 	/**
 	 * Initializes the grid view.
@@ -373,13 +381,16 @@ abstract class BaseTreeGrid extends Widget {
 		$options['data-key'] = $key;
 
 		//treegrid
-		Html::addCssClass($options, 'treegrid-'.$model[$this->idAttribute]);
+		$id = $model[$this->idAttribute];
+		Html::addCssClass($options, 'treegrid-'.$id);
 		$parentId = $this->getParentId($model, $key, $index);
 		if ($parentId !== null) {
 			Html::addCssClass($options, 'treegrid-parent-'.$parentId);
 		}
 		$childCount = $this->getChildCount($model, $key, $index);
-		if ($childCount) {
+		if (array_search($id, $this->_expanded) !== false) {
+			Html::addCssClass($options, 'expanded');
+		} elseif ($childCount) {
 			$options['data-count'] = $childCount;
 		}
 
@@ -388,20 +399,42 @@ abstract class BaseTreeGrid extends Widget {
 
 	/**
 	 * Additional params for data provider.
+	 * @return void
 	 */
 	protected function initDataProvider()
 	{
 		$this->dataProvider->pagination = false;
 		$this->dataProvider->sort = false;
 		if ($this->dataProvider instanceof ActiveDataProvider) {
-			$id = Yii::$app->getRequest()->get('treegrid_id', null);
-			if ($this->lazyLoad || $id !== null) {
-				$this->addLazyCondition($id);
-				$this->_token = Yii::$app->getRequest()->get('treegrid_token', null);
-				if ($this->_token !== null) $this->options['data-treegrid-token'] = $this->_token;
-			}
+			$this->initActiveDataProvider();
 		}
 		if (!$this->lazyLoad && !$this->showRoots) $this->removeRoots();
+		if ($this->initialNode) $this->_expanded = $this->initialExpand();
+		$this->sortModels();
+		$this->dataProvider->setKeys(null);
+		$this->dataProvider->prepare();
+	}
+
+	/**
+	 * Initialization of active data provider.
+	 * @return void
+	 */
+	protected function initActiveDataProvider()
+	{
+		$id = Yii::$app->getRequest()->get('treegrid_id', null);
+		$items = [];
+		if ($this->lazyLoad && $this->initialNode !== null && $id === null) {
+			$items = $this->loadInitial();
+		}
+		if ($this->lazyLoad || $id !== null) {
+			$this->addLazyCondition($id);
+			$this->_token = Yii::$app->getRequest()->get('treegrid_token', null);
+			if ($this->_token !== null) $this->options['data-treegrid-token'] = $this->_token;
+		}
+		if (!empty($items)) {
+			$models = array_merge($this->dataProvider->getModels(), $items);
+			$this->dataProvider->setModels($models);
+		}
 	}
 
 	/**
@@ -475,11 +508,29 @@ abstract class BaseTreeGrid extends Widget {
 	abstract protected function getChildCount($model);
 
 	/**
-	 * Addition conditions for child nodes filtering in lazy load mode.
+	 * Addition conditions for child nodes filtering in lazy load mode when $dataProvider is ActiveDataProvider.
 	 * @param string $id node id
 	 * @return void
 	 */
 	abstract protected function addLazyCondition($id);
+
+	/**
+	 * Manualy load initial node when $dataProvider is ActiveDataProvider.
+	 * @return array
+	 */
+	abstract protected function loadInitial();
+
+	/**
+	 * Make array of expanded nodes to show initial node.
+	 * @return array
+	 */
+	abstract protected function initialExpand();
+
+	/**
+	 * Sorting models in data provider. Placing child models after its parent.
+	 * @return void
+	 */
+	abstract protected function sortModels();
 
 	/**
 	 * Remove roots from data provider if needed
