@@ -44,7 +44,7 @@ Nested sets tree
 Lazy loading
 -----
 
-By default the `lazyLoad` property is set to `true`. This mean, that widget automatically will add conditions to `dataProvider` (for `yii\data\ActiveDataProvider`) to load children nodes on demand.
+By default the `lazyLoad` property is set to `true`. This mean, that widget automatically will add conditions to `dataProvider` (for `yii\data\ActiveDataProvider`) to load children nodes on demand. Initially widget loads only root and its children.
 
 Controller :
 
@@ -76,7 +76,7 @@ Roots
 Initial node
 -----
 
-You can make lazy load tree initialy partialy rendered. To do this, set `initialNode` to node that should be visible. Widget will render all parents of this node with their children. All parents will be rendered expanded. It may be usefull when you edit nodes (on redirect to `index` just add `id` of edited node).
+You can make lazy load tree initially partialy rendered. To do this, set `initialNode` to node that should be visible. Widget will render all parents of this node with their children. All parents will be rendered expanded. It may be usefull when you edit nodes (on redirect to `index` just add `id` of edited node).
 
 Controller :
 
