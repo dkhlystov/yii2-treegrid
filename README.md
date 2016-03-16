@@ -33,6 +33,14 @@ Once the extension is installed, simply use it in your code by  :
 ]); ?>
 ```
 
+Parent relative tree
+-----
+[To be written]
+
+Nested sets tree
+-----
+[To be written]
+
 Lazy loading
 -----
 
