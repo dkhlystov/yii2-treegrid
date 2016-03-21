@@ -213,10 +213,9 @@ abstract class BaseTreeGrid extends Widget {
 		$options = $this->pluginOptions;
 
 		if (!isset($options['source'])) {
-			$url = Url::toRoute('');
 			$options['source'] = new JsExpression('function(id, response) {
 				var $tr = this, token = Math.random().toString(36).substr(2);
-				$.get("'.$url.'", {treegrid_id: id, treegrid_token: token}, function(data) {
+				$.get(window.location, {treegrid_id: id, treegrid_token: token}, function(data) {
 					response(data);
 				}, "json");
 			}');
