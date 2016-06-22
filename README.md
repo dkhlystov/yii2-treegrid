@@ -107,4 +107,39 @@ View :
 
 Moving nodes
 -----
-[To be written]
+
+Set `moveAction` property in widget to enable nodes moving. Url will be generated using `yii\helpers\Url::toRoute()` function. Action receives three parameters: `id` - identifier of moving node, `target` - a node identifier, where the movement has been made, `position` - movement position (0 - before target, 1 - into target, 2 - after target).
+
+View :
+
+```php
+<?= \dkhlystov\widgets\NestedTreeGrid::widget([
+    'dataProvider' => $dataProvider,
+    'moveAction' => ['move'],
+]); ?>
+```
+
+Controller :
+
+```php
+    function actionMove($id, $target, $position)
+    {
+        $model = Menu::findOne($id);
+
+        $t = Menu::findOne($target);
+
+        switch ($position) {
+            case 0:
+                $model->insertBefore($t);
+                break;
+
+            case 1:
+                $model->appendTo($t);
+                break;
+            
+            case 2:
+                $model->insertAfter($t);
+                break;
+        }
+    }
+```
