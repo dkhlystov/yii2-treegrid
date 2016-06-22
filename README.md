@@ -28,7 +28,7 @@ Basic usage
 Once the extension is installed, simply use it in your code by  :
 
 ```php
-<?= \dkhlystov\widgets\TreeView::widget([
+<?= \dkhlystov\widgets\TreeGrid::widget([
 		'dataProvider' => $dataProvider,
 ]); ?>
 ```
@@ -64,7 +64,7 @@ Controller :
 View :
 
 ```php
-<?= \dkhlystov\widgets\TreeView::widget([
+<?= \dkhlystov\widgets\TreeGrid::widget([
 		'dataProvider' => $dataProvider,
 ]); ?>
 ```
@@ -99,7 +99,7 @@ Controller :
 View :
 
 ```php
-<?= \dkhlystov\widgets\TreeView::widget([
+<?= \dkhlystov\widgets\TreeGrid::widget([
 		'dataProvider' => $dataProvider,
 		'initialNode' => $initial,
 ]); ?>
