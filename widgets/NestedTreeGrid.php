@@ -4,6 +4,7 @@ namespace dkhlystov\widgets;
 
 use yii\base\InvalidConfigException;
 use yii\data\ActiveDataProvider;
+use yii\web\JsExpression;
 
 /**
  * The NestedTreeGrid widget is used to display nested set tree data in a grid.
@@ -54,6 +55,13 @@ class NestedTreeGrid extends BaseTreeGrid
 			$this->dataProvider->query->orderBy([$this->leftAttribute => SORT_ASC]);
 
 		parent::init();
+
+		if ($this->showRoots && empty($this->pluginOptions['onMoveOver']))
+			$this->pluginOptions['onMoveOver'] = new JsExpression('function(item, helper, target, position) {
+				if (item.treegrid("getDepth") == 1) return false;
+				if ((position == 0 || position == 2) && target.treegrid("getDepth") == 1) return false;
+				return true;
+			}');
 	}
 
 	/**
