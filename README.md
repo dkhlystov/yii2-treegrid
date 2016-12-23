@@ -1,6 +1,6 @@
 yii2-treegrid
 =============
-TreeView widget for Yii PHP Framework Version 2
+TreeView widget for Yii 2 framework
 
 Installation
 ------------
@@ -71,7 +71,7 @@ View :
 
 Roots
 -----
-[To be written]
+By default the `showRoots` property is set to `false`. To show roots in the tree, set this property to `true`. If you use nested sets tree, make sure that `treeAttribute` property is set correctly. By default it set to `tree`.
 
 Initial node
 -----
