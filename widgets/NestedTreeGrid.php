@@ -2,6 +2,7 @@
 
 namespace dkhlystov\widgets;
 
+use yii\base\InvalidConfigException;
 use yii\data\ActiveDataProvider;
 
 /**
@@ -11,42 +12,52 @@ use yii\data\ActiveDataProvider;
  *
  * @author Dmitry Khlystov <dkhlystov@gmail.com>
  */
-class NestedTreeGrid extends BaseTreeGrid {
+class NestedTreeGrid extends BaseTreeGrid
+{
+
+	/**
+	 * @var string name of tree attribute.
+	 */
+	public $treeAttribute = 'tree';
 
 	/**
 	 * @var string name of left attribute.
 	 */
 	public $leftAttribute = 'lft';
+
 	/**
 	 * @var string name of right attribute.
 	 */
 	public $rightAttribute = 'rgt';
+
 	/**
 	 * @var string name of depth attribute.
 	 */
 	public $depthAttribute = 'depth';
+
 	/**
 	 * @var integer current depth to determite parent of table row
 	 */
 	private $_depth;
+
 	/**
 	 * @var array ids of nodes to determite parent of table row
 	 */
 	private $_parentIds = [];
 
 	/**
-	 * {@inheritdoc}
+	 * @inheritdoc
 	 */
 	public function init()
 	{
-		if ($this->dataProvider instanceof ActiveDataProvider) {
+		if ($this->dataProvider instanceof ActiveDataProvider)
 			$this->dataProvider->query->orderBy([$this->leftAttribute => SORT_ASC]);
-		}
+
 		parent::init();
 	}
 
 	/**
-	 * {@inheritdoc}
+	 * @inheritdoc
 	 */
 	protected function getParentId($model)
 	{
@@ -63,7 +74,7 @@ class NestedTreeGrid extends BaseTreeGrid {
 	}
 
 	/**
-	 * {@inheritdoc}
+	 * @inheritdoc
 	 */
 	protected function getChildCount($model)
 	{
@@ -71,7 +82,7 @@ class NestedTreeGrid extends BaseTreeGrid {
 	}
 
 	/**
-	 * {@inheritdoc}
+	 * @inheritdoc
 	 */
 	protected function addLazyCondition($id)
 	{
@@ -98,7 +109,7 @@ class NestedTreeGrid extends BaseTreeGrid {
 	}
 
 	/**
-	 * {@inheritdoc}
+	 * @inheritdoc
 	 */
 	protected function loadInitial()
 	{
@@ -127,7 +138,7 @@ class NestedTreeGrid extends BaseTreeGrid {
 	}
 
 	/**
-	 * {@inheritdoc}
+	 * @inheritdoc
 	 */
 	protected function initialExpand()
 	{
@@ -144,19 +155,25 @@ class NestedTreeGrid extends BaseTreeGrid {
 	}
 
 	/**
-	 * {@inheritdoc}
+	 * @inheritdoc
 	 */
 	protected function sortModels()
 	{
 		$models = $this->dataProvider->getModels();
 		usort($models, function($a, $b) {
+			if ($this->showRoots) {
+				$tree = $a[$this->treeAttribute] - $b[$this->treeAttribute];
+				if ($tree != 0)
+					return $tree;
+			}
+
 			return $a[$this->leftAttribute] - $b[$this->leftAttribute];
 		});
 		$this->dataProvider->setModels($models);
 	}
 
 	/**
-	 * {@inheritdoc}
+	 * @inheritdoc
 	 */
 	protected function removeRoots()
 	{
