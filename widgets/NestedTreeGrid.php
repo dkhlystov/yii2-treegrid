@@ -102,17 +102,28 @@ class NestedTreeGrid extends BaseTreeGrid
 			} else {
 				$conditions = [$this->idAttribute => $id];
 			}
+
 			$class = $this->dataProvider->query->modelClass;
-			$row = $class::find()->select([
+			$select = [
 				$this->leftAttribute,
 				$this->rightAttribute,
 				$this->depthAttribute,
-			])->where($conditions)->asArray()->one();
-			if ($row !== null) $this->dataProvider->query->andWhere(['and',
-				['>', $this->leftAttribute, $row[$this->leftAttribute]],
-				['<', $this->rightAttribute, $row[$this->rightAttribute]],
-				['=', $this->depthAttribute, $row[$this->depthAttribute] + 1],
-			]);
+			];
+			if ($this->showRoots)
+				$select[] = $this->treeAttribute;
+
+			$row = $class::find()->select($select)->where($conditions)->asArray()->one();
+			if ($row !== null) {
+				$where = ['and',
+					['>', $this->leftAttribute, $row[$this->leftAttribute]],
+					['<', $this->rightAttribute, $row[$this->rightAttribute]],
+					['=', $this->depthAttribute, $row[$this->depthAttribute] + 1],
+				];
+				if ($this->showRoots)
+					$where[] = ['=', $this->treeAttribute, $row[$this->treeAttribute]];
+
+				$this->dataProvider->query->andWhere($where);
+			}
 		}
 	}
 
@@ -121,25 +132,38 @@ class NestedTreeGrid extends BaseTreeGrid
 	 */
 	protected function loadInitial()
 	{
+		$tree = $this->showRoots ? $this->initialNode[$this->treeAttribute] : false;
+
 		$query = clone $this->dataProvider->query;
-		if (!$this->showRoots) $query->andWhere(['<>', $this->leftAttribute, 1]);
+		if (!$this->showRoots)
+			$query->andWhere(['<>', $this->leftAttribute, 1]);
+
+		$where = ['and',
+			['<', $this->leftAttribute, $this->initialNode[$this->leftAttribute]],
+			['>', $this->rightAttribute, $this->initialNode[$this->rightAttribute]],
+		];
+		if ($this->showRoots)
+			$where[] = ['=', $this->treeAttribute, $tree];
+
 		$parents = $query->select([
 			$this->leftAttribute,
 			$this->rightAttribute,
 			$this->depthAttribute,
-		])->andWhere(['and',
-			['<', $this->leftAttribute, $this->initialNode[$this->leftAttribute]],
-			['>', $this->rightAttribute, $this->initialNode[$this->rightAttribute]],
-		])->asArray()->all();
+		])->andWhere($where)->asArray()->all();
 
 		$items = [];
 		foreach ($parents as $row) {
 			$query = clone $this->dataProvider->query;
-			$items = array_merge($items, $query->andWhere(['and',
+
+			$where = ['and',
 				['>', $this->leftAttribute, $row[$this->leftAttribute]],
 				['<', $this->rightAttribute, $row[$this->rightAttribute]],
 				['=', $this->depthAttribute, $row[$this->depthAttribute] + 1],
-			])->all());
+			];
+			if ($this->showRoots)
+				$where[] = ['=', $this->treeAttribute, $tree];
+
+			$items = array_merge($items, $query->andWhere($where)->all());
 		}
 
 		return $items;
@@ -152,10 +176,13 @@ class NestedTreeGrid extends BaseTreeGrid
 	{
 		$lft = $this->initialNode[$this->leftAttribute];
 		$rgt = $this->initialNode[$this->rightAttribute];
+		$tree = $this->showRoots ? $this->initialNode[$this->treeAttribute] : false;
+
 		$expanded = [];
 		foreach ($this->dataProvider->getModels() as $model) {
 			if ($model[$this->leftAttribute] < $lft && $model[$this->rightAttribute] > $rgt) {
-				$expanded[] = $model[$this->idAttribute];
+				if (!$this->showRoots || $model[$this->treeAttribute] == $tree)
+					$expanded[] = $model[$this->idAttribute];
 			}
 		}
 
