@@ -1,6 +1,6 @@
 yii2-treegrid
 =============
-TreeView widget for Yii 2 framework
+TreeGrid widget for Yii 2 framework
 
 Installation
 ------------
