@@ -8,10 +8,6 @@ class TreeGridAsset extends AssetBundle {
 
 	public $sourcePath = '@bower/treegrid/dist';
 
-// 	public $js = [
-// 		'js/jquery.treegrid'.(YII_DEBUG ? '' : '.min').'.js',
-// 	];
-
 	public $css = [
 		'css/jquery.treegrid.css',
 	];
@@ -19,11 +15,14 @@ class TreeGridAsset extends AssetBundle {
 	public $depends = [
 		'yii\web\JqueryAsset',
 	];
-	
-    	public function registerAssetFiles( $view ){
+
+	public function init()
+	{
+		parent::init();
+
 		$this->js = [
-		    'js/jquery.treegrid'.(YII_DEBUG ? '' : '.min').'.js',
+			'js/jquery.treegrid'.(YII_DEBUG ? '' : '.min').'.js',
 		];
-		parent::registerAssetFiles( $view );
-    	}
+	}
+
 }
