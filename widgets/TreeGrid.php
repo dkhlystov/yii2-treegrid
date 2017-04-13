@@ -51,6 +51,9 @@ class TreeGrid extends BaseTreeGrid {
 		$attr = $this->countAttribute;
 		if ($model instanceof BaseActiveRecord) {
 			if ($model->hasAttribute($attr)) return $model->getAttribute($attr);
+
+			$idAttr = $this->idAttribute;
+			return $model::find()->where([$this->parentIdAttribute => $model->$idAttr])->count();
 		} else {
 			if (isset($model[$attr])) return $model[$attr];
 		}
