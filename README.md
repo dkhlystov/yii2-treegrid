@@ -29,13 +29,15 @@ Once the extension is installed, simply use it in your code by  :
 
 ```php
 <?= \dkhlystov\widgets\TreeGrid::widget([
-		'dataProvider' => $dataProvider,
+    'dataProvider' => $dataProvider,
 ]); ?>
 ```
 
 Parent relative tree
 -----
-[To be written]
+Check that you correctly set `idAttribute` and `parentIdAttribute` properties. By default it is `id` and `parent_id`.
+By default root nodes is the nodes with parent id equal to `0`. If you want to change this use `rootParentId`.
+It is strongly recommended to set `countAttribute` with the name of attribute that contains count of children.
 
 Nested sets tree
 -----
@@ -65,7 +67,7 @@ View :
 
 ```php
 <?= \dkhlystov\widgets\TreeGrid::widget([
-		'dataProvider' => $dataProvider,
+    'dataProvider' => $dataProvider,
 ]); ?>
 ```
 
@@ -100,8 +102,8 @@ View :
 
 ```php
 <?= \dkhlystov\widgets\TreeGrid::widget([
-		'dataProvider' => $dataProvider,
-		'initialNode' => $initial,
+    'dataProvider' => $dataProvider,
+    'initialNode' => $initial,
 ]); ?>
 ```
 
