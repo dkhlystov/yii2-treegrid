@@ -403,7 +403,6 @@ abstract class BaseTreeGrid extends Widget {
 	protected function initDataProvider()
 	{
 		$this->dataProvider->pagination = false;
-		$this->dataProvider->sort = false;
 		if ($this->dataProvider instanceof ActiveDataProvider) {
 			$this->initActiveDataProvider();
 		}
